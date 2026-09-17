@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CampusHire · Placement Management System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#242660;         /* deep indigo */
+    --ink-2:#33356f;
+    --gold:#d9a441;        /* opportunity gold */
+    --gold-deep:#b3831f;
+    --paper:#f5f4f1;
+    --card:#ffffff;
+    --line:#e2ddd0;
+    --placed:#1f8a5f;
+    --placed-bg:#e7f4ee;
+    --pending:#c98a1c;
+    --pending-bg:#faf1de;
+    --rejected:#b8503f;
+    --rejected-bg:#f8e9e6;
+    --muted:#6a6b85;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Inter',system-ui,sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{font-family:'Manrope',system-ui,sans-serif;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  button{font-family:inherit;cursor:pointer;}
+  input,select{font-family:inherit;}
+
+  /* ---------- Shell ---------- */
+  #appShell{display:grid;min-height:100vh;grid-template-columns:230px 1fr;}
+  aside{
+    background:var(--ink);color:#dadaea;padding:22px 16px;display:flex;flex-direction:column;
+    position:sticky;top:0;height:100vh;
+  }
+  .brand{display:flex;align-items:center;gap:10px;padding:0 8px 20px;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:16px;}
+  .brand .mark{width:34px;height:34px;border-radius:9px;background:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--ink);font-family:'Manrope';}
+  .brand div{line-height:1.2;}
+  .brand b{font-family:'Manrope';font-size:14px;display:block;color:#fff;}
+  .brand span{font-size:10.5px;color:#9394b8;}
+  nav.side-nav{display:flex;flex-direction:column;gap:3px;flex:1;}
+  nav.side-nav button{
+    display:flex;align-items:center;gap:10px;text-align:left;background:none;border:none;color:#b3b4cf;
+    padding:10px 12px;border-radius:9px;font-size:13.5px;font-weight:500;
+  }
+  nav.side-nav button .ic{width:18px;text-align:center;}
+  nav.side-nav button:hover{background:rgba(255,255,255,0.06);color:#fff;}
+  nav.side-nav button.active{background:var(--gold);color:var(--ink);font-weight:700;}
+  .side-foot{border-top:1px solid rgba(255,255,255,0.1);padding-top:14px;margin-top:10px;}
+  .side-user{display:flex;align-items:center;gap:9px;margin-bottom:10px;}
+  .side-user .av{width:30px;height:30px;border-radius:50%;background:var(--ink-2);border:1.5px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
+  .side-user b{font-size:12.5px;display:block;color:#fff;}
+  .side-user span{font-size:10.5px;color:#9394b8;text-transform:capitalize;}
+
+  main{padding:28px 34px 60px;max-width:1180px;}
+  .page{display:none;}
+  .page.active{display:block;animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+  .page-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:22px;flex-wrap:wrap;gap:10px;}
+  .page-head h1{font-size:22px;margin:0 0 4px;}
+  .page-head p{margin:0;color:var(--muted);font-size:13.5px;}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-deep);margin:0 0 6px;}
+
+  .grid-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:26px;}
+  .stat-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;}
+  .stat-card .label{font-size:11.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
+  .stat-card .val{font-family:'Manrope';font-size:28px;font-weight:700;margin:6px 0 2px;}
+  .stat-card .delta{font-size:11.5px;color:var(--muted);}
+  .stat-card.placed .val{color:var(--placed);}
+  .stat-card.pending .val{color:var(--pending);}
+  .stat-card.gold .val{color:var(--gold-deep);}
+
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;margin-bottom:20px;}
+  .panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+  .panel-head h3{margin:0;font-size:15px;}
+
+  .two-col{display:grid;grid-template-columns:1.4fr 1fr;gap:20px;}
+  @media (max-width:980px){.two-col{grid-template-columns:1fr;} .grid-stats{grid-template-columns:repeat(2,1fr);}}
+
+  .notice{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px;}
+  .notice:last-child{border-bottom:none;}
+  .notice .dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex:none;}
+  .notice .dot.warn{background:var(--pending);}
+  .notice .dot.ok{background:var(--placed);}
+  .notice small{color:var(--muted);display:block;margin-top:1px;}
+
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center;}
+  .toolbar input[type=text],.toolbar select,.toolbar input[type=date],.toolbar input[type=number]{
+    padding:9px 12px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;background:#fff;
+  }
+  .toolbar input[type=text]{flex:1;min-width:180px;}
+  .btn{padding:9px 15px;border-radius:9px;border:1.5px solid var(--line);background:#fff;font-size:13px;font-weight:600;color:var(--ink);}
+  .btn:hover{border-color:var(--ink);}
+  .btn.primary{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .btn.primary:hover{background:var(--ink-2);}
+  .btn.gold{background:var(--gold-deep);color:#fff;border-color:var(--gold-deep);}
+  .btn.gold:hover{background:#93691a;}
+  .btn.danger{color:var(--rejected);border-color:var(--rejected);background:#fff;}
+  .btn.danger:hover{background:var(--rejected-bg);}
+  .btn.sm{padding:6px 10px;font-size:12px;}
+
+  table{width:100%;border-collapse:collapse;font-size:13.3px;}
+  th{text-align:left;padding:9px 10px;color:var(--muted);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1.5px solid var(--line);cursor:pointer;user-select:none;white-space:nowrap;}
+  th:hover{color:var(--ink);}
+  td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:700;}
+  .pill.placed{background:var(--placed-bg);color:var(--placed);}
+  .pill.pending,.pill.applied,.pill.shortlisted{background:var(--pending-bg);color:var(--pending);}
+  .pill.rejected{background:var(--rejected-bg);color:var(--rejected);}
+  .pill.open{background:var(--placed-bg);color:var(--placed);}
+  .pill.closed{background:#eeeef4;color:var(--muted);}
+  .row-actions{display:flex;gap:6px;}
+  .empty{text-align:center;color:var(--muted);padding:30px 10px;font-size:13.5px;}
+
+  .overlay{position:fixed;inset:0;background:rgba(36,38,96,0.55);display:none;align-items:center;justify-content:center;z-index:50;padding:20px;}
+  .overlay.show{display:flex;}
+  .modal{background:#fff;border-radius:16px;padding:26px 26px 20px;max-width:480px;width:100%;max-height:88vh;overflow:auto;}
+  .modal h3{margin:0 0 16px;font-size:16px;}
+  .modal .field{margin-bottom:13px;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-2);margin-bottom:6px;}
+  .field input,.field select{
+    width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:10px;
+    font-size:14px;background:#fff;color:var(--ink);outline:none;transition:border-color .15s;
+  }
+  .field input:focus,.field select:focus{border-color:var(--gold-deep);}
+  .login-err{color:var(--rejected);font-size:12.5px;margin:-6px 0 12px;display:none;}
+
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:#fff;padding:12px 18px;border-radius:10px;font-size:13px;box-shadow:0 12px 24px -8px rgba(0,0,0,0.4);z-index:100;display:flex;align-items:center;gap:8px;opacity:0;transform:translateY(8px);pointer-events:none;transition:.25s;}
+  .toast.show{opacity:1;transform:none;}
+  .toast .dot{width:7px;height:7px;border-radius:50%;background:var(--gold);}
+
+  ::selection{background:var(--gold);color:var(--ink);}
+</style>
+</head>
+<body>
+
+<!-- ================= APP SHELL ================= -->
+<div id="appShell">
+  <aside>
+    <div class="brand">
+      <div class="mark">CH</div>
+      <div><b>CampusHire</b><span>Placement Cell</span></div>
+    </div>
+    <nav class="side-nav" id="sideNav">
+      <button data-page="dashboard" class="active"><span class="ic">◆</span> Dashboard</button>
+      <button data-page="students"><span class="ic">▤</span> Students</button>
+      <button data-page="companies" data-admin-only><span class="ic">▥</span> Companies</button>
+      <button data-page="jobs"><span class="ic">▦</span> Job Postings</button>
+      <button data-page="applications"><span class="ic">✓</span> Applications</button>
+    </nav>
+    <div class="side-foot">
+      <div class="side-user">
+        <div class="av" id="userAv">O</div>
+        <div><b id="userName">Placement Officer</b><span id="userRole">admin</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <!-- ---- DASHBOARD ---- -->
+    <section class="page active" id="page-dashboard">
+      <div class="page-head">
+        <div>
+          <p class="eyebrow" id="todayDate">Placement Cell</p>
+          <h1>Dashboard</h1>
+          <p>Live snapshot of placement activity across the college.</p>
+        </div>
+        <button class="btn gold" onclick="go('jobs')">View job postings →</button>
+      </div>
+      <div class="grid-stats">
+        <div class="stat-card"><div class="label">Total Students</div><div class="val" id="statStudents">0</div><div class="delta">registered</div></div>
+        <div class="stat-card gold"><div class="label">Partner Companies</div><div class="val" id="statCompanies">0</div><div class="delta">active partners</div></div>
+        <div class="stat-card pending"><div class="label">Open Job Postings</div><div class="val" id="statJobs">0</div><div class="delta">accepting applications</div></div>
+        <div class="stat-card placed"><div class="label">Students Placed</div><div class="val" id="statPlaced">0</div><div class="delta" id="statPlacedRate">0% placement rate</div></div>
+      </div>
+      <div class="two-col">
+        <div class="panel">
+          <div class="panel-head"><h3>Recent job postings</h3></div>
+          <table><thead><tr><th>Role</th><th>Company</th><th>Package</th><th>Status</th></tr></thead>
+          <tbody id="recentJobsBody"></tbody></table>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Notifications</h3></div>
+          <div id="notifList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---- STUDENTS ---- -->
+    <section class="page" id="page-students">
+      <div class="page-head">
+        <div><p class="eyebrow">Registry</p><h1>Students</h1><p>Manage student records and placement status.</p></div>
+        <button class="btn primary" onclick="openStudentModal()" data-admin-only>+ Add student</button>
+      </div>
+      <div class="toolbar">
+        <input type="text" id="studentSearch" placeholder="Search by name or ID..." oninput="renderStudents()">
+        <select id="studentStatusFilter" onchange="renderStudents()">
+          <option value="all">All statuses</option>
+          <option value="Placed">Placed</option>
+          <option value="Pending">Pending</option>
+        </select>
+      </div>
+      <div class="panel">
+        <table>
+          <thead><tr>
+            <th onclick="sortStudents('id')">ID</th>
+            <th onclick="sortStudents('name')">Name</th>
+            <th>Department</th><th>CGPA</th><th>Status</th><th></th>
+          </tr></thead>
+          <tbody id="studentsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ---- COMPANIES ---- -->
+    <section class="page" id="page-companies">
+      <div class="page-head">
+        <div><p class="eyebrow">Partners</p><h1>Companies</h1><p>Manage recruiting partners and contact details.</p></div>
+        <button class="btn primary" onclick="openCompanyModal()">+ Add company</button>
+      </div>
+      <div class="panel">
+        <table>
+          <thead><tr><th>ID</th><th>Company</th><th>Industry</th><th>Contact Email</th><th>Website</th><th></th></tr></thead>
+          <tbody id="companiesBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ---- JOB POSTINGS ---- -->
+    <section class="page" id="page-jobs">
+      <div class="page-head">
+        <div><p class="eyebrow">Opportunities</p><h1>Job Postings</h1><p>Manage open roles and eligibility criteria.</p></div>
+        <button class="btn primary" onclick="openJobModal()" data-admin-only>+ Add job posting</button>
+      </div>
+      <div class="toolbar">
+        <select id="jobStatusFilter" onchange="renderJobs()">
+          <option value="all">All statuses</option>
+          <option value="Open">Open</option>
+          <option value="Closed">Closed</option>
+        </select>
+      </div>
+      <div class="panel">
+        <table>
+          <thead><tr><th>Role</th><th>Company</th><th>Package (LPA)</th><th>Min. CGPA</th><th>Deadline</th><th>Status</th><th></th></tr></thead>
+          <tbody id="jobsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ---- APPLICATIONS ---- -->
+    <section class="page" id="page-applications">
+      <div class="page-head">
+        <div><p class="eyebrow">Pipeline</p><h1>Applications</h1><p>Track every student's application through the hiring pipeline.</p></div>
+        <button class="btn gold" onclick="openApplyModal()" data-student-only>+ Apply to a job</button>
+      </div>
+      <div class="toolbar">
+        <select id="appStatusFilter" onchange="renderApplications()">
+          <option value="all">All statuses</option>
+          <option value="Applied">Applied</option>
+          <option value="Shortlisted">Shortlisted</option>
+          <option value="Placed">Placed</option>
+          <option value="Rejected">Rejected</option>
+        </select>
+      </div>
+      <div class="panel">
+        <table>
+          <thead><tr><th>Student</th><th>Role</th><th>Company</th><th>Applied On</th><th>Status</th><th></th></tr></thead>
+          <tbody id="applicationsBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ================= MODALS ================= -->
+<div class="overlay" id="studentModal">
+  <div class="modal">
+    <h3 id="studentModalTitle">Add student</h3>
+    <input type="hidden" id="sId">
+    <div class="field"><label>Full name</label><input type="text" id="sName"></div>
+    <div class="field"><label>Department</label>
+      <select id="sDept"><option>Computer Science</option><option>Information Technology</option><option>Electronics</option><option>Mechanical</option><option>Civil</option></select>
+    </div>
+    <div class="field"><label>CGPA</label><input type="text" id="sCgpa" placeholder="e.g. 8.4"></div>
+    <div class="field"><label>Email</label><input type="email" id="sEmail"></div>
+    <div class="field"><label>Phone number</label><input type="text" id="sPhone" placeholder="10-digit number"></div>
+    <div class="field"><label>Placement status</label>
+      <select id="sStatus"><option>Pending</option><option>Placed</option></select>
+    </div>
+    <p class="login-err" id="sErr" style="display:none;">Please fill all required fields correctly.</p>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('studentModal')">Cancel</button>
+      <button class="btn primary" onclick="saveStudent()">Save student</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="companyModal">
+  <div class="modal">
+    <h3 id="companyModalTitle">Add company</h3>
+    <input type="hidden" id="cId">
+    <div class="field"><label>Company name</label><input type="text" id="cName"></div>
+    <div class="field"><label>Industry</label><input type="text" id="cIndustry" placeholder="e.g. IT Services"></div>
+    <div class="field"><label>Contact email</label><input type="email" id="cEmail"></div>
+    <div class="field"><label>Website</label><input type="text" id="cWebsite" placeholder="e.g. www.company.com"></div>
+    <p class="login-err" id="cErr" style="display:none;">Please fill all required fields correctly.</p>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('companyModal')">Cancel</button>
+      <button class="btn primary" onclick="saveCompany()">Save company</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="jobModal">
+  <div class="modal">
+    <h3 id="jobModalTitle">Add job posting</h3>
+    <input type="hidden" id="jId">
+    <div class="field"><label>Job role</label><input type="text" id="jTitle" placeholder="e.g. Software Engineer"></div>
+    <div class="field"><label>Company</label><select id="jCompany"></select></div>
+    <div class="field"><label>Package (LPA)</label><input type="text" id="jPackage" placeholder="e.g. 6.5"></div>
+    <div class="field"><label>Minimum CGPA</label><input type="text" id="jCgpa" placeholder="e.g. 7.0"></div>
+    <div class="field"><label>Application deadline</label><input type="date" id="jDeadline"></div>
+    <div class="field"><label>Status</label>
+      <select id="jStatus"><option>Open</option><option>Closed</option></select>
+    </div>
+    <p class="login-err" id="jErr" style="display:none;">Please fill all required fields.</p>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('jobModal')">Cancel</button>
+      <button class="btn primary" onclick="saveJob()">Save job posting</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="applyModal">
+  <div class="modal">
+    <h3>Apply to a job</h3>
+    <div class="field"><label>Job posting</label><select id="applyJob"></select></div>
+    <p class="login-err" id="applyErr" style="display:none;">Please select a job posting.</p>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('applyModal')">Cancel</button>
+      <button class="btn gold" onclick="submitApplication()">Submit application</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span class="dot"></span><span id="toastMsg">Saved</span></div>
+
+<script>
+/* ============================================================
+   Placement Management System — demo app (no login required)
+   In-memory data store (no backend required). All data resets
+   on page reload by design. App always loads as Placement Officer.
+   ============================================================ */
+
+let currentUser = {name:'Placement Officer', role:'admin', studentId:'S001'};
+let sortState = {key:'id', dir:1};
+
+let companies = [
+  {id:'C01', name:'Zenith Technologies', industry:'IT Services', email:'hr@zenithtech.com', website:'www.zenithtech.com'},
+  {id:'C02', name:'Bluewave Analytics', industry:'Data & Analytics', email:'careers@bluewave.com', website:'www.bluewave.com'},
+  {id:'C03', name:'Ferrovia Motors', industry:'Manufacturing', email:'recruit@ferrovia.com', website:'www.ferrovia.com'},
+  {id:'C04', name:'Northgate Bank', industry:'Banking & Finance', email:'campus@northgatebank.com', website:'www.northgatebank.com'},
+];
+
+let students = [
+  {id:'S001', name:'Arjun Kumar', dept:'Computer Science', cgpa:'8.6', email:'arjun.k@college.edu', phone:'9876543210', status:'Pending'},
+  {id:'S002', name:'Priya Dharshini', dept:'Information Technology', cgpa:'9.1', email:'priya.d@college.edu', phone:'9876543211', status:'Placed'},
+  {id:'S003', name:'Mohammed Irfan', dept:'Electronics', cgpa:'7.8', email:'irfan.m@college.edu', phone:'9876543212', status:'Pending'},
+  {id:'S004', name:'Lakshmi Narayanan', dept:'Computer Science', cgpa:'8.9', email:'lakshmi.n@college.edu', phone:'9876543213', status:'Placed'},
+  {id:'S005', name:'Vignesh S', dept:'Mechanical', cgpa:'7.5', email:'vignesh.s@college.edu', phone:'9876543214', status:'Pending'},
+  {id:'S006', name:'Divya Bharathi', dept:'Information Technology', cgpa:'8.2', email:'divya.b@college.edu', phone:'9876543215', status:'Pending'},
+  {id:'S007', name:'Karthik Raja', dept:'Civil', cgpa:'7.2', email:'karthik.r@college.edu', phone:'9876543216', status:'Pending'},
+  {id:'S008', name:'Nandhini V', dept:'Computer Science', cgpa:'8.4', email:'nandhini.v@college.edu', phone:'9876543217', status:'Placed'},
+];
+
+let jobs = [
+  {id:'J01', title:'Software Engineer', companyId:'C01', package:'6.5', minCgpa:'7.0', deadline:'2026-08-15', status:'Open'},
+  {id:'J02', title:'Data Analyst', companyId:'C02', package:'7.2', minCgpa:'7.5', deadline:'2026-08-20', status:'Open'},
+  {id:'J03', title:'Graduate Engineer Trainee', companyId:'C03', package:'5.0', minCgpa:'6.5', deadline:'2026-07-30', status:'Closed'},
+  {id:'J04', title:'Associate Analyst', companyId:'C04', package:'8.0', minCgpa:'8.0', deadline:'2026-09-01', status:'Open'},
+];
+
+let applications = [];
+let idCounters = {student: 9, company: 5, job: 5, application: 1};
+
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function pad3(n, p){ return p + String(n).padStart(3,'0'); }
+
+(function seedApplications(){
+  const seed = [
+    ['S001','J01','Applied'], ['S001','J02','Shortlisted'],
+    ['S002','J01','Placed'],  ['S003','J02','Applied'],
+    ['S004','J04','Placed'],  ['S005','J01','Rejected'],
+    ['S006','J02','Shortlisted'], ['S008','J04','Placed'],
+  ];
+  seed.forEach(([studentId,jobId,status])=>{
+    applications.push({id:'A'+(idCounters.application++), studentId, jobId, status, date: todayStr()});
+  });
+})();
+
+/* ---------------- Navigation ---------------- */
+function go(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('#sideNav button').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
+  if(page==='dashboard') renderDashboard();
+  if(page==='students') renderStudents();
+  if(page==='companies') renderCompanies();
+  if(page==='jobs') renderJobs();
+  if(page==='applications') renderApplications();
+}
+document.getElementById('sideNav').addEventListener('click', e=>{
+  const btn = e.target.closest('button[data-page]');
+  if(btn) go(btn.dataset.page);
+});
+
+function initApp(){
+  document.getElementById('userName').textContent = currentUser.name;
+  document.getElementById('userRole').textContent = currentUser.role;
+  document.getElementById('userAv').textContent = currentUser.name[0];
+  document.querySelectorAll('[data-admin-only]').forEach(el=>{
+    el.style.display = currentUser.role==='admin' ? '' : 'none';
+  });
+  document.querySelectorAll('[data-student-only]').forEach(el=>{
+    el.style.display = currentUser.role==='student' ? '' : 'none';
+  });
+  document.getElementById('todayDate').textContent = currentUser.role==='admin' ? 'Placement Cell' : 'My Placement Journey';
+  populateJobSelects();
+  go('dashboard');
+}
+
+function populateJobSelects(){
+  document.getElementById('jCompany').innerHTML = companies.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  const openJobs = jobs.filter(j=>j.status==='Open');
+  document.getElementById('applyJob').innerHTML = openJobs.map(j=>`<option value="${j.id}">${j.title} — ${companyName(j.companyId)}</option>`).join('') || '<option value="">No open postings</option>';
+}
+
+function companyName(id){ const c = companies.find(x=>x.id===id); return c ? c.name : '—'; }
+function studentName(id){ const s = students.find(x=>x.id===id); return s ? s.name : '—'; }
+function jobTitle(id){ const j = jobs.find(x=>x.id===id); return j ? j.title : '—'; }
+
+/* ---------------- Toast ---------------- */
+function toast(msg){
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=>t.classList.remove('show'), 2400);
+}
+
+/* ---------------- Dashboard ---------------- */
+function renderDashboard(){
+  const totalStudents = students.length;
+  const totalCompanies = companies.length;
+  const openJobs = jobs.filter(j=>j.status==='Open').length;
+  const placed = students.filter(s=>s.status==='Placed').length;
+  const rate = totalStudents ? Math.round(placed/totalStudents*100) : 0;
+
+  document.getElementById('statStudents').textContent = totalStudents;
+  document.getElementById('statCompanies').textContent = totalCompanies;
+  document.getElementById('statJobs').textContent = openJobs;
+  document.getElementById('statPlaced').textContent = placed;
+  document.getElementById('statPlacedRate').textContent = rate + '% placement rate';
+
+  const body = document.getElementById('recentJobsBody');
+  body.innerHTML = jobs.slice(0,5).map(j=>`
+    <tr>
+      <td><b>${j.title}</b></td>
+      <td>${companyName(j.companyId)}</td>
+      <td>${j.package} LPA</td>
+      <td><span class="pill ${j.status.toLowerCase()}">${j.status}</span></td>
+    </tr>`).join('');
+
+  const notifs = [];
+  applications.filter(a=>a.status==='Shortlisted').forEach(a=>{
+    notifs.push({type:'warn', text:`${studentName(a.studentId)} shortlisted for ${jobTitle(a.jobId)}`, sub:`${companyName(jobs.find(j=>j.id===a.jobId)?.companyId)} · awaiting next round`});
+  });
+  applications.filter(a=>a.status==='Placed').slice(0,3).forEach(a=>{
+    notifs.push({type:'ok', text:`${studentName(a.studentId)} placed at ${companyName(jobs.find(j=>j.id===a.jobId)?.companyId)}`, sub:`Role: ${jobTitle(a.jobId)}`});
+  });
+  if(!notifs.length) notifs.push({type:'ok', text:'No pending updates', sub:'New applications will appear here'});
+  document.getElementById('notifList').innerHTML = notifs.slice(0,8).map(n=>`
+    <div class="notice"><span class="dot ${n.type}"></span>
+      <div>${n.text}<small>${n.sub}</small></div>
+    </div>`).join('');
+}
+
+/* ---------------- Students ---------------- */
+function renderStudents(){
+  const q = (document.getElementById('studentSearch').value||'').toLowerCase();
+  const sf = document.getElementById('studentStatusFilter').value;
+  let rows = students.filter(s=>
+    (s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q)) &&
+    (sf==='all' || s.status===sf)
+  );
+  rows.sort((a,b)=>{
+    const A=(a[sortState.key]||'').toString().toLowerCase(), B=(b[sortState.key]||'').toString().toLowerCase();
+    return A<B ? -1*sortState.dir : A>B ? 1*sortState.dir : 0;
+  });
+  const body = document.getElementById('studentsBody');
+  if(!rows.length){ body.innerHTML = '<tr><td colspan="6" class="empty">No students match your search.</td></tr>'; return; }
+  const isAdmin = currentUser.role==='admin';
+  body.innerHTML = rows.map(s=>`
+    <tr>
+      <td class="mono">${s.id}</td>
+      <td><b>${s.name}</b></td>
+      <td>${s.dept}</td>
+      <td>${s.cgpa}</td>
+      <td><span class="pill ${s.status.toLowerCase()}">${s.status}</span></td>
+      <td class="row-actions">
+        ${isAdmin ? `<button class="btn sm" onclick="openStudentModal('${s.id}')">Edit</button>
+        <button class="btn sm danger" onclick="deleteStudent('${s.id}')">Delete</button>` : ''}
+      </td>
+    </tr>`).join('');
+}
+function sortStudents(key){
+  sortState.dir = (sortState.key===key) ? -sortState.dir : 1;
+  sortState.key = key;
+  renderStudents();
+}
+function openStudentModal(id){
+  document.getElementById('sErr').style.display='none';
+  const s = students.find(x=>x.id===id);
+  document.getElementById('studentModalTitle').textContent = s ? 'Edit student' : 'Add student';
+  document.getElementById('sId').value = s ? s.id : '';
+  document.getElementById('sName').value = s ? s.name : '';
+  document.getElementById('sDept').value = s ? s.dept : 'Computer Science';
+  document.getElementById('sCgpa').value = s ? s.cgpa : '';
+  document.getElementById('sEmail').value = s ? s.email : '';
+  document.getElementById('sPhone').value = s ? s.phone : '';
+  document.getElementById('sStatus').value = s ? s.status : 'Pending';
+  document.getElementById('studentModal').classList.add('show');
+}
+function saveStudent(){
+  const name = document.getElementById('sName').value.trim();
+  const phone = document.getElementById('sPhone').value.trim();
+  const cgpa = document.getElementById('sCgpa').value.trim();
+  if(!name || !/^[0-9]{10}$/.test(phone) || !cgpa){
+    document.getElementById('sErr').style.display='block';
+    return;
+  }
+  const id = document.getElementById('sId').value;
+  const data = {
+    name, dept: document.getElementById('sDept').value, cgpa,
+    email: document.getElementById('sEmail').value.trim(),
+    phone, status: document.getElementById('sStatus').value,
+  };
+  if(id){
+    Object.assign(students.find(s=>s.id===id), data);
+    toast('Student updated');
+  } else {
+    const newId = pad3(idCounters.student++, 'S');
+    students.push({id:newId, ...data});
+    toast('Student added');
+  }
+  closeModal('studentModal');
+  renderStudents();
+  renderDashboard();
+}
+function deleteStudent(id){
+  if(!confirm('Delete this student and their applications?')) return;
+  students = students.filter(s=>s.id!==id);
+  applications = applications.filter(a=>a.studentId!==id);
+  renderStudents();
+  renderDashboard();
+  toast('Student deleted');
+}
+
+/* ---------------- Companies ---------------- */
+function renderCompanies(){
+  const body = document.getElementById('companiesBody');
+  if(!companies.length){ body.innerHTML = '<tr><td colspan="6" class="empty">No companies yet.</td></tr>'; return; }
+  const isAdmin = currentUser.role==='admin';
+  body.innerHTML = companies.map(c=>`
+    <tr>
+      <td class="mono">${c.id}</td><td><b>${c.name}</b></td><td>${c.industry}</td><td>${c.email}</td><td>${c.website}</td>
+      <td class="row-actions">
+        ${isAdmin ? `<button class="btn sm" onclick="openCompanyModal('${c.id}')">Edit</button>
+        <button class="btn sm danger" onclick="deleteCompany('${c.id}')">Delete</button>` : ''}
+      </td>
+    </tr>`).join('');
+}
+function openCompanyModal(id){
+  document.getElementById('cErr').style.display='none';
+  const c = companies.find(x=>x.id===id);
+  document.getElementById('companyModalTitle').textContent = c ? 'Edit company' : 'Add company';
+  document.getElementById('cId').value = c ? c.id : '';
+  document.getElementById('cName').value = c ? c.name : '';
+  document.getElementById('cIndustry').value = c ? c.industry : '';
+  document.getElementById('cEmail').value = c ? c.email : '';
+  document.getElementById('cWebsite').value = c ? c.website : '';
+  document.getElementById('companyModal').classList.add('show');
+}
+function saveCompany(){
+  const name = document.getElementById('cName').value.trim();
+  const email = document.getElementById('cEmail').value.trim();
+  if(!name || !/^\S+@\S+\.\S+$/.test(email)){
+    document.getElementById('cErr').style.display='block';
+    return;
+  }
+  const id = document.getElementById('cId').value;
+  const data = {name, industry:document.getElementById('cIndustry').value.trim(), email, website:document.getElementById('cWebsite').value.trim()};
+  if(id){ Object.assign(companies.find(c=>c.id===id), data); toast('Company updated'); }
+  else { companies.push({id: pad3(idCounters.company++, 'C'), ...data}); toast('Company added'); }
+  closeModal('companyModal');
+  populateJobSelects();
+  renderCompanies();
+}
+function deleteCompany(id){
+  if(!confirm('Delete this company and its job postings?')) return;
+  companies = companies.filter(c=>c.id!==id);
+  const removedJobIds = jobs.filter(j=>j.companyId===id).map(j=>j.id);
+  jobs = jobs.filter(j=>j.companyId!==id);
+  applications = applications.filter(a=>!removedJobIds.includes(a.jobId));
+  populateJobSelects();
+  renderCompanies();
+  renderDashboard();
+  toast('Company deleted');
+}
+
+/* ---------------- Jobs ---------------- */
+function renderJobs(){
+  const sf = document.getElementById('jobStatusFilter').value;
+  let rows = jobs.filter(j=> sf==='all' || j.status===sf);
+  const body = document.getElementById('jobsBody');
+  if(!rows.length){ body.innerHTML = '<tr><td colspan="7" class="empty">No job postings match this filter.</td></tr>'; return; }
+  const isAdmin = currentUser.role==='admin';
+  body.innerHTML = rows.map(j=>`
+    <tr>
+      <td><b>${j.title}</b></td>
+      <td>${companyName(j.companyId)}</td>
+      <td>${j.package} LPA</td>
+      <td>${j.minCgpa}</td>
+      <td class="mono">${j.deadline}</td>
+      <td><span class="pill ${j.status.toLowerCase()}">${j.status}</span></td>
+      <td class="row-actions">
+        ${isAdmin ? `<button class="btn sm" onclick="openJobModal('${j.id}')">Edit</button>
+        <button class="btn sm danger" onclick="deleteJob('${j.id}')">Delete</button>` : ''}
+      </td>
+    </tr>`).join('');
+}
+function openJobModal(id){
+  document.getElementById('jErr').style.display='none';
+  const j = jobs.find(x=>x.id===id);
+  document.getElementById('jobModalTitle').textContent = j ? 'Edit job posting' : 'Add job posting';
+  document.getElementById('jId').value = j ? j.id : '';
+  document.getElementById('jTitle').value = j ? j.title : '';
+  document.getElementById('jCompany').value = j ? j.companyId : (companies[0] ? companies[0].id : '');
+  document.getElementById('jPackage').value = j ? j.package : '';
+  document.getElementById('jCgpa').value = j ? j.minCgpa : '';
+  document.getElementById('jDeadline').value = j ? j.deadline : '';
+  document.getElementById('jStatus').value = j ? j.status : 'Open';
+  document.getElementById('jobModal').classList.add('show');
+}
+function saveJob(){
+  const title = document.getElementById('jTitle').value.trim();
+  const pkg = document.getElementById('jPackage').value.trim();
+  if(!title || !pkg){
+    document.getElementById('jErr').style.display='block';
+    return;
+  }
+  const id = document.getElementById('jId').value;
+  const data = {
+    title, companyId: document.getElementById('jCompany').value,
+    package: pkg, minCgpa: document.getElementById('jCgpa').value.trim(),
+    deadline: document.getElementById('jDeadline').value, status: document.getElementById('jStatus').value,
+  };
+  if(id){ Object.assign(jobs.find(j=>j.id===id), data); toast('Job posting updated'); }
+  else { jobs.push({id: pad3(idCounters.job++, 'J'), ...data}); toast('Job posting added'); }
+  closeModal('jobModal');
+  populateJobSelects();
+  renderJobs();
+  renderDashboard();
+}
+function deleteJob(id){
+  if(!confirm('Delete this job posting and its applications?')) return;
+  jobs = jobs.filter(j=>j.id!==id);
+  applications = applications.filter(a=>a.jobId!==id);
+  populateJobSelects();
+  renderJobs();
+  renderDashboard();
+  toast('Job posting deleted');
+}
+
+/* ---------------- Applications ---------------- */
+function renderApplications(){
+  const sf = document.getElementById('appStatusFilter').value;
+  const isAdmin = currentUser.role==='admin';
+  let rows = applications.filter(a=>{
+    if(sf!=='all' && a.status!==sf) return false;
+    if(!isAdmin && a.studentId!==currentUser.studentId) return false;
+    return true;
+  }).sort((a,b)=> b.date.localeCompare(a.date));
+  const body = document.getElementById('applicationsBody');
+  if(!rows.length){ body.innerHTML = '<tr><td colspan="6" class="empty">No applications found.</td></tr>'; return; }
+  body.innerHTML = rows.map(a=>{
+    const job = jobs.find(j=>j.id===a.jobId);
+    return `<tr>
+      <td>${studentName(a.studentId)}</td>
+      <td>${jobTitle(a.jobId)}</td>
+      <td>${job ? companyName(job.companyId) : '—'}</td>
+      <td class="mono">${a.date}</td>
+      <td><span class="pill ${a.status.toLowerCase()}">${a.status}</span></td>
+      <td class="row-actions">
+        ${isAdmin ? `<select class="btn sm" onchange="updateApplicationStatus('${a.id}', this.value)" style="cursor:pointer;">
+          <option value="">Update status</option>
+          <option value="Applied">Applied</option>
+          <option value="Shortlisted">Shortlisted</option>
+          <option value="Placed">Placed</option>
+          <option value="Rejected">Rejected</option>
+        </select>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+function updateApplicationStatus(id, status){
+  if(!status) return;
+  const a = applications.find(x=>x.id===id);
+  if(a){
+    a.status = status;
+    if(status==='Placed'){
+      const s = students.find(x=>x.id===a.studentId);
+      if(s) s.status = 'Placed';
+    }
+    toast('Application status updated');
+    renderApplications();
+    renderDashboard();
+  }
+}
+function openApplyModal(){
+  document.getElementById('applyErr').style.display='none';
+  populateJobSelects();
+  document.getElementById('applyModal').classList.add('show');
+}
+function submitApplication(){
+  const jobId = document.getElementById('applyJob').value;
+  if(!jobId){
+    document.getElementById('applyErr').style.display='block';
+    return;
+  }
+  const exists = applications.find(a=>a.studentId===currentUser.studentId && a.jobId===jobId);
+  if(exists){
+    toast('You have already applied to this job');
+    closeModal('applyModal');
+    return;
+  }
+  applications.push({id:'A'+(idCounters.application++), studentId: currentUser.studentId, jobId, status:'Applied', date: todayStr()});
+  closeModal('applyModal');
+  renderApplications();
+  toast('Application submitted');
+}
+
+/* ---------------- Modal helpers ---------------- */
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+document.querySelectorAll('.overlay').forEach(ov=>{
+  ov.addEventListener('click', e=>{ if(e.target===ov) ov.classList.remove('show'); });
+});
+
+/* App loads straight into the dashboard — no login required */
+initApp();
+</script>
+</body>
+</html>
